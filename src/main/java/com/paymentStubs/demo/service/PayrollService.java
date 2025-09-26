@@ -57,6 +57,9 @@ public class PayrollService {
         logger.info("Processando holerite para: {} na thread: {}", data.getFullName(),
                 Thread.currentThread().getName());
         try {
+            // geracao do pdf para cada registro
+            PdfService.generate(data);
+
             // Simulação da lógica de negócio (gerar PDF, enviar email)
             // 1. Chamar um PdfService.generate(data)
             // 2. Chamar um EmailService.send(pdf, data.email())

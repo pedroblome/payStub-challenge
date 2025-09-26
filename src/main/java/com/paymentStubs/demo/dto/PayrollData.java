@@ -46,6 +46,16 @@ public class PayrollData {
 
     // Getters e Setters (necessários para o OpenCSV preencher os dados)
     // Você pode gerar todos eles automaticamente no seu IDE
+
+    @Override
+    public String toString() {
+        return "PayrollData [fullName=" + fullName + ", email=" + email + ", position=" + position
+                + ", healthDiscountAmount=" + healthDiscountAmount + ", socialDiscountAmount=" + socialDiscountAmount
+                + ", taxesDiscountAmount=" + taxesDiscountAmount + ", otherDiscountAmount=" + otherDiscountAmount
+                + ", grossSalary=" + grossSalary + ", grossPayment=" + grossPayment + ", netPayment=" + netPayment
+                + ", period=" + period + ", net_payment=" + net_payment + "]";
+    }
+
     public String getFullName() {
         return fullName;
     }
@@ -62,14 +72,68 @@ public class PayrollData {
         this.email = email;
     }
 
-    // ... adicione getters e setters para TODOS os outros campos ...
+    public String getPosition() {
+        return position;
+    }
+
+    public void setPosition(String position) {
+        this.position = position;
+    }
+
+    public Double getHealthDiscountAmount() {
+        return healthDiscountAmount;
+    }
+
+    public void setHealthDiscountAmount(Double healthDiscountAmount) {
+        this.healthDiscountAmount = healthDiscountAmount;
+    }
+
+    public Double getSocialDiscountAmount() {
+        return socialDiscountAmount;
+    }
+
+    public void setSocialDiscountAmount(Double socialDiscountAmount) {
+        this.socialDiscountAmount = socialDiscountAmount;
+    }
+
+    public Double getTaxesDiscountAmount() {
+        return taxesDiscountAmount;
+    }
+
+    public void setTaxesDiscountAmount(Double taxesDiscountAmount) {
+        this.taxesDiscountAmount = taxesDiscountAmount;
+    }
+
+    public Double getOtherDiscountAmount() {
+        return otherDiscountAmount;
+    }
+
+    public void setOtherDiscountAmount(Double otherDiscountAmount) {
+        this.otherDiscountAmount = otherDiscountAmount;
+    }
+
+    public Double getGrossSalary() {
+        return grossSalary;
+    }
+
+    public void setGrossSalary(Double grossSalary) {
+        this.grossSalary = grossSalary;
+    }
+
+    public Double getGrossPayment() {
+        return grossPayment;
+    }
+
+    public void setGrossPayment(Double grossPayment) {
+        this.grossPayment = grossPayment;
+    }
 
     public Double getNetPayment() {
-        return getNetPayment();
+        return netPayment;
     }
 
     public void setNetPayment(Double netPayment) {
-        this.net_payment = netPayment;
+        this.netPayment = netPayment;
     }
 
     public String getPeriod() {
@@ -80,12 +144,11 @@ public class PayrollData {
         this.period = period;
     }
 
-    @Override
-    public String toString() {
-        return "PayrollData [fullName=" + fullName + ", email=" + email + ", position=" + position
-                + ", healthDiscountAmount=" + healthDiscountAmount + ", socialDiscountAmount=" + socialDiscountAmount
-                + ", taxesDiscountAmount=" + taxesDiscountAmount + ", otherDiscountAmount=" + otherDiscountAmount
-                + ", grossSalary=" + grossSalary + ", grossPayment=" + grossPayment + ", netPayment=" + netPayment
-                + ", period=" + period + ", net_payment=" + net_payment + "]";
+    public Double getNet_payment() {
+        return net_payment;
+    }
+
+    public void setNet_payment(Double net_payment) {
+        this.net_payment = net_payment;
     }
 }
