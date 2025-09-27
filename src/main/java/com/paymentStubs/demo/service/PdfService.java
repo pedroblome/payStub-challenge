@@ -14,26 +14,36 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.paymentStubs.demo.dto.PayrollData;
+import org.springframework.context.MessageSource;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.util.Locale;
 
+@Service
 public class PdfService {
 
     private static final String DEST_FOLDER = "dest/";
+    private final MessageSource messageSource;
+
+    // Injecting MessageSource to handle language translations (i18n)
+    public PdfService(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
 
     /**
-     * Gera um arquivo PDF para um único registro de folha de pagamento.
-     * @param data Os dados do funcionário e pagamento.
-     * @throws IOException Se ocorrer um erro de I/O ao criar o arquivo ou a pasta.
+     * Generates a PDF file for a single payroll record.
+     * @param data The employee and payment data.
+     * @param company The company name, used to load the correct logo.
+     * @param country The country code (e.g., "do", "en"), used for localization.
+     * @throws IOException If an I/O error occurs.
      */
-    public static void generate(PayrollData data) throws IOException {
-        // Garante que o diretório de destino exista
+    public void generate(PayrollData data, String company, String country) throws IOException {
         Files.createDirectories(Paths.get(DEST_FOLDER));
-
         String destFile = DEST_FOLDER + "paystub_" + data.getFullName().replace(" ", "_") + "_" + data.getPeriod() + ".pdf";
 
         PdfWriter writer = new PdfWriter(destFile);
@@ -41,29 +51,32 @@ public class PdfService {
         Document document = new Document(pdf, PageSize.A4);
         document.setMargins(30, 30, 30, 30);
 
-        // --- CABEÇALHO ---
-        Table headerTable = createHeader(data);
+        Locale locale = country.equalsIgnoreCase("do") ? new Locale("es", "DO") : Locale.US;
+
+        Table headerTable = createHeader(data, company, locale);
         document.add(headerTable);
 
-        // --- CORPO COM DADOS FINANCEIROS ---
-        document.add(new Paragraph("\n")); // Espaçamento
-        Table bodyTable = createBody(data);
+        document.add(new Paragraph("\n"));
+        Table bodyTable = createBody(data, locale);
         document.add(bodyTable);
 
-        // --- RODAPÉ COM PAGAMENTO LÍQUIDO ---
-        Table footerTable = createFooter(data);
+        Table footerTable = createFooter(data, locale);
         document.add(footerTable);
 
         document.close();
     }
 
-    private static Table createHeader(PayrollData data) throws IOException {
+    private Table createHeader(PayrollData data, String company, Locale locale) throws IOException {
         Table table = new Table(UnitValue.createPercentArray(new float[]{50, 50})).useAllAvailableWidth();
         table.setBorder(Border.NO_BORDER);
 
-        // Coluna da Esquerda: Logo
-        Cell logoCell = new Cell();
-        URL logoResource = PdfService.class.getClassLoader().getResource("logos/FakeClients.png");
+        Cell logoCell = new Cell().setBorder(Border.NO_BORDER);
+        String logoPath = "logos/" + company.toLowerCase() + ".png";
+        URL logoResource = getClass().getClassLoader().getResource(logoPath);
+        if (logoResource == null) {
+            logoResource = getClass().getClassLoader().getResource("logos/default.png"); // Fallback to default
+        }
+
         if (logoResource != null) {
             Image logo = new Image(ImageDataFactory.create(logoResource));
             logo.setWidth(UnitValue.createPercentValue(60));
@@ -71,72 +84,64 @@ public class PdfService {
         } else {
             logoCell.add(new Paragraph("Logo not found").setFontSize(20).setBold());
         }
-        logoCell.setBorder(Border.NO_BORDER);
         table.addCell(logoCell);
 
-        // Coluna da Direita: Informações do Pagamento
-        Cell infoCell = new Cell();
-        infoCell.add(new Paragraph("Comprobante de pago " + data.getPeriod()).setTextAlignment(TextAlignment.RIGHT));
+        Cell infoCell = new Cell().setBorder(Border.NO_BORDER);
+        infoCell.add(new Paragraph(messageSource.getMessage("paystub.title", new Object[]{data.getPeriod()}, locale)).setTextAlignment(TextAlignment.RIGHT));
         infoCell.add(new Paragraph(data.getFullName()).setBold().setFontSize(14).setTextAlignment(TextAlignment.RIGHT));
         infoCell.add(new Paragraph(data.getPosition()).setTextAlignment(TextAlignment.RIGHT));
-        infoCell.setBorder(Border.NO_BORDER);
         table.addCell(infoCell);
 
         return table;
     }
 
-    private static Table createBody(PayrollData data) {
-        Table table = new Table(UnitValue.createPercentArray(new float[]{25, 25, 25, 25})).useAllAvailableWidth();
+    private Table createBody(PayrollData data, Locale locale) {
+        Table table = new Table(UnitValue.createPercentArray(new float[]{25, 20, 10, 25, 20})).useAllAvailableWidth();
         table.setBorder(Border.NO_BORDER);
 
-        // --- Lado Esquerdo: Salários ---
-        table.addCell(createSimpleCell("Salario bruto"));
+        table.addCell(createSimpleCell(messageSource.getMessage("paystub.gross_salary", null, locale)));
         table.addCell(createValueCell(formatCurrency(data.getGrossSalary())));
-        
-        // --- Lado Direito: Descontos ---
-        table.addCell(createSimpleCell("Descuentos").setBold());
-        table.addCell(createValueCell("")); // Célula vazia para alinhamento
+        table.addCell(createSimpleCell("")); // Spacer column
 
-        table.addCell(createSimpleCell("Pago Bruto"));
+        table.addCell(createSimpleCell(messageSource.getMessage("paystub.discounts", null, locale)).setBold());
+        table.addCell(createValueCell(""));
+
+        table.addCell(createSimpleCell(messageSource.getMessage("paystub.gross_payment", null, locale)));
         table.addCell(createValueCell(formatCurrency(data.getGrossPayment())));
-        
-        table.addCell(createSimpleCell("SFS"));
+        table.addCell(createSimpleCell("")); // Spacer column
+
+        table.addCell(createSimpleCell(messageSource.getMessage("paystub.sfs", null, locale)));
         table.addCell(createValueCell(formatCurrency(data.getSocialDiscountAmount())));
-
-        table.addCell(createSimpleCell("")); // Célula vazia
-        table.addCell(createSimpleCell("")); // Célula vazia
-
-        table.addCell(createSimpleCell("AFP"));
+        
+        table.addCell(createSimpleCell("")); table.addCell(createSimpleCell("")); table.addCell(createSimpleCell(""));
+        
+        table.addCell(createSimpleCell(messageSource.getMessage("paystub.afp", null, locale)));
         table.addCell(createValueCell(formatCurrency(data.getHealthDiscountAmount())));
         
-        table.addCell(createSimpleCell("")); // Célula vazia
-        table.addCell(createSimpleCell("")); // Célula vazia
-
-        table.addCell(createSimpleCell("ISR"));
-        table.addCell(createValueCell(formatCurrency(data.getTaxesDiscountAmount())));
+        table.addCell(createSimpleCell("")); table.addCell(createSimpleCell("")); table.addCell(createSimpleCell(""));
         
-        table.addCell(createSimpleCell("")); // Célula vazia
-        table.addCell(createSimpleCell("")); // Célula vazia
+        table.addCell(createSimpleCell(messageSource.getMessage("paystub.isr", null, locale)));
+        table.addCell(createValueCell(formatCurrency(data.getTaxesDiscountAmount())));
 
-        table.addCell(createSimpleCell("Otros"));
+        table.addCell(createSimpleCell("")); table.addCell(createSimpleCell("")); table.addCell(createSimpleCell(""));
+
+        table.addCell(createSimpleCell(messageSource.getMessage("paystub.others", null, locale)));
         table.addCell(createValueCell(formatCurrency(data.getOtherDiscountAmount())));
 
-        // --- Linha do Total ---
-        double totalDescontos = data.getSocialDiscountAmount() + data.getHealthDiscountAmount() + data.getTaxesDiscountAmount() + data.getOtherDiscountAmount();
-        table.addCell(createSimpleCell("")); // Célula vazia
-        table.addCell(createSimpleCell("")); // Célula vazia
-        table.addCell(createSimpleCell("Total").setBold());
-        table.addCell(createValueCell(formatCurrency(totalDescontos)).setBold());
+        double totalDiscounts = data.getSocialDiscountAmount() + data.getHealthDiscountAmount() + data.getTaxesDiscountAmount() + data.getOtherDiscountAmount();
+        table.addCell(createSimpleCell("")); table.addCell(createSimpleCell("")); table.addCell(createSimpleCell(""));
+        table.addCell(createSimpleCell(messageSource.getMessage("paystub.total", null, locale)).setBold());
+        table.addCell(createValueCell(formatCurrency(totalDiscounts)).setBold());
 
         return table;
     }
 
-    private static Table createFooter(PayrollData data) {
-        Table table = new Table(UnitValue.createPercentArray(new float[]{25, 25})).useAllAvailableWidth();
+    private Table createFooter(PayrollData data, Locale locale) {
+        Table table = new Table(UnitValue.createPercentArray(new float[]{50, 50})).useAllAvailableWidth();
         table.setBorderTop(new com.itextpdf.layout.borders.SolidBorder(ColorConstants.BLACK, 1));
         table.setMarginTop(10);
 
-        Cell labelCell = new Cell().add(new Paragraph("Pago neto").setBold().setFontSize(14));
+        Cell labelCell = new Cell().add(new Paragraph(messageSource.getMessage("paystub.net_payment", null, locale)).setBold().setFontSize(14));
         labelCell.setBorder(Border.NO_BORDER);
 
         Cell valueCell = new Cell().add(new Paragraph(formatCurrency(data.getNetPayment())).setBold().setFontSize(14));
@@ -149,21 +154,17 @@ public class PdfService {
         return table;
     }
 
-    private static Cell createSimpleCell(String text) {
-        Cell cell = new Cell().add(new Paragraph(text));
-        cell.setBorder(Border.NO_BORDER);
-        return cell;
+    private Cell createSimpleCell(String text) {
+        return new Cell().add(new Paragraph(text)).setBorder(Border.NO_BORDER);
     }
 
-    private static Cell createValueCell(String text) {
-        Cell cell = createSimpleCell(text);
-        cell.setTextAlignment(TextAlignment.RIGHT);
-        return cell;
+    private Cell createValueCell(String text) {
+        return createSimpleCell(text).setTextAlignment(TextAlignment.RIGHT);
     }
 
-    private static String formatCurrency(Double value) {
+    private String formatCurrency(Double value) {
         if (value == null) return "0.00";
-        DecimalFormat formatter = new DecimalFormat("#,##0.00");
-        return formatter.format(value);
+        return new DecimalFormat("#,##0.00").format(value);
     }
 }
+

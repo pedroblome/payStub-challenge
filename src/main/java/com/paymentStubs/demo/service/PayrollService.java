@@ -18,8 +18,20 @@ import java.nio.charset.StandardCharsets;
 public class PayrollService {
 
     private static final Logger logger = LoggerFactory.getLogger(PayrollService.class);
+    private final PdfService pdfService;
 
-    public void processPayrollCsv(InputStream inputStream) {
+    // Inject the PdfService via constructor to make it available to this class.
+    public PayrollService(PdfService pdfService) {
+        this.pdfService = pdfService;
+    }
+
+    /**
+     * Processes the CSV file from an InputStream, delegating each record for asynchronous processing.
+     * @param inputStream The CSV file content.
+     * @param company The company identifier, used for branding (e.g., logos).
+     * @param country The country code, used for localization (e.g., language).
+     */
+    public void processPayrollCsv(InputStream inputStream, String company, String country) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
             var csvToBean = new CsvToBeanBuilder<PayrollData>(reader)
@@ -28,48 +40,38 @@ public class PayrollService {
                     .withThrowExceptions(false)
                     .build();
 
-            // O loop principal agora apenas dispara tarefas para serem executadas em
-            // paralelo.
             for (PayrollData payrollData : csvToBean) {
-                // A chamada agora é para o novo método assíncrono.
-                processRecordAsync(payrollData);
+                // Dispatch each record for asynchronous processing with the provided context.
+                processRecordAsync(payrollData, company, country);
             }
 
             if (!csvToBean.getCapturedExceptions().isEmpty()) {
                 for (CsvException exception : csvToBean.getCapturedExceptions()) {
-                    logger.warn("Falha no parsing da linha {}: {}", exception.getLineNumber(), exception.getMessage());
+                    logger.warn("Failed to parse row {}: {}", exception.getLineNumber(), exception.getMessage());
                 }
             }
         } catch (IOException e) {
-            logger.error("Erro ao ler o arquivo CSV.", e);
-            throw new RuntimeException("Falha ao processar o arquivo.", e);
+            logger.error("Error reading the CSV file stream.", e);
+            throw new RuntimeException("Failed to process the file.", e);
         }
     }
 
     /**
-     * Processa um único registro de folha de pagamento de forma assíncrona.
-     * 
-     * @param data O objeto PayrollData a ser processado.
+     * Asynchronously processes a single payroll record by generating a PDF.
+     * @param data The payroll data for one employee.
+     * @param company The company identifier.
+     * @param country The country code for localization.
      */
-    @Async("csvTaskExecutor") // Diz ao Spring para executar este método no nosso pool de threads customizado.
-    public void processRecordAsync(PayrollData data) {
-        // Esta lógica agora roda em uma thread separada.
-        logger.info("Processando holerite para: {} na thread: {}", data.getFullName(),
-                Thread.currentThread().getName());
+    @Async("csvTaskExecutor")
+    public void processRecordAsync(PayrollData data, String company, String country) {
+        logger.info("Generating PDF for: {} on thread: {}", data.getFullName(), Thread.currentThread().getName());
         try {
-            // geracao do pdf para cada registro
-            PdfService.generate(data);
-
-            // Simulação da lógica de negócio (gerar PDF, enviar email)
-            // 1. Chamar um PdfService.generate(data)
-            // 2. Chamar um EmailService.send(pdf, data.email())
-
-            // Simular um trabalho demorado
+            // Delegate PDF generation to the specialized PdfService.
+            pdfService.generate(data, company, country);
+            logger.info("PDF successfully generated for: {}", data.getFullName());
 
         } catch (Exception e) {
-            // É CRUCIAL tratar exceções aqui, pois elas ocorrem em outra thread
-            // e não seriam capturadas pelo chamador principal.
-            logger.error("Falha ao processar registro para o funcionário: {}", data.getFullName(), e);
+            logger.error("Failed to process record for employee: {}", data.getFullName(), e);
         }
     }
 }
