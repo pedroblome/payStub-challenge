@@ -1,3 +1,6 @@
 com/paymentStubs/demo/dto/PayrollData.class
-com/paymentStubs/demo/controller/StubPayController.class
+com/paymentStubs/demo/config/MessageSourceConfig.class
 com/paymentStubs/demo/DemoApplication.class
+com/paymentStubs/demo/service/EmailService.class
+com/paymentStubs/demo/config/AsyncConfig.class
+com/paymentStubs/demo/service/PdfService.class

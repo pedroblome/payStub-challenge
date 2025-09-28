@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
-@EnableAsync // Habilita a execução de métodos @Async em background
+@EnableAsync
 public class DemoApplication {
 
 	public static void main(String[] args) {

@@ -13,7 +13,6 @@ public class StubPayController {
 
     private final PayrollService payrollService;
 
-    // Injeção de dependência via construtor é a melhor prática.
     public StubPayController(PayrollService payrollService) {
         this.payrollService = payrollService;
     }
@@ -25,16 +24,16 @@ public class StubPayController {
             @RequestParam(value = "company", defaultValue = "default") String company) throws java.io.IOException {
 
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("Arquivo não enviado.");
+            return ResponseEntity.badRequest().body("No file was uploaded.");
         }
 
         try {
             payrollService.processPayrollCsv(file.getInputStream(), company, country);
-            return ResponseEntity.ok("Arquivo recebido. O processamento foi iniciado em segundo plano.");
+            return ResponseEntity.ok("File received. Processing has started in the background.");
         } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("Erro ao ler o arquivo: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("Error reading the file: " + e.getMessage());
         } catch (RuntimeException e) {
-            return ResponseEntity.internalServerError().body("Erro no processamento: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("Error during processing: " + e.getMessage());
         }
     }
 }

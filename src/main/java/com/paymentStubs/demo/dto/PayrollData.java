@@ -2,7 +2,6 @@ package com.paymentStubs.demo.dto;
 
 import com.opencsv.bean.CsvBindByName;
 
-// Mude de 'public record' para 'public class'
 public class PayrollData {
 
     @CsvBindByName(column = "full_name", required = true)
@@ -40,12 +39,8 @@ public class PayrollData {
 
     private Double net_payment;
 
-    // Construtor sem argumentos (obrigatório para o OpenCSV)
     public PayrollData() {
     }
-
-    // Getters e Setters (necessários para o OpenCSV preencher os dados)
-    // Você pode gerar todos eles automaticamente no seu IDE
 
     @Override
     public String toString() {

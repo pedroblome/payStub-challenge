@@ -19,17 +19,20 @@ public class PayrollService {
 
     private static final Logger logger = LoggerFactory.getLogger(PayrollService.class);
     private final PdfService pdfService;
+    private final EmailService emailService;
 
-    // Inject the PdfService via constructor to make it available to this class.
-    public PayrollService(PdfService pdfService) {
+    public PayrollService(PdfService pdfService, EmailService emailService) {
         this.pdfService = pdfService;
+        this.emailService = emailService;
     }
 
     /**
-     * Processes the CSV file from an InputStream, delegating each record for asynchronous processing.
+     * Processes the CSV file from an InputStream, delegating each record for
+     * asynchronous processing.
+     * 
      * @param inputStream The CSV file content.
-     * @param company The company identifier, used for branding (e.g., logos).
-     * @param country The country code, used for localization (e.g., language).
+     * @param company     The company identifier, used for branding (e.g., logos).
+     * @param country     The country code, used for localization (e.g., language).
      */
     public void processPayrollCsv(InputStream inputStream, String company, String country) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
@@ -41,7 +44,6 @@ public class PayrollService {
                     .build();
 
             for (PayrollData payrollData : csvToBean) {
-                // Dispatch each record for asynchronous processing with the provided context.
                 processRecordAsync(payrollData, company, country);
             }
 
@@ -58,17 +60,26 @@ public class PayrollService {
 
     /**
      * Asynchronously processes a single payroll record by generating a PDF.
-     * @param data The payroll data for one employee.
+     * 
+     * @param data    The payroll data for one employee.
      * @param company The company identifier.
      * @param country The country code for localization.
      */
     @Async("csvTaskExecutor")
     public void processRecordAsync(PayrollData data, String company, String country) {
-        logger.info("Generating PDF for: {} on thread: {}", data.getFullName(), Thread.currentThread().getName());
         try {
-            // Delegate PDF generation to the specialized PdfService.
-            pdfService.generate(data, company, country);
-            logger.info("PDF successfully generated for: {}", data.getFullName());
+            logger.info("Processing record for: {}", data.getFullName());
+
+            byte[] pdfBytes = pdfService.generate(data, company, country);
+            logger.info("PDF generated in-memory for: {}", data.getFullName());
+
+            String subject = "Your Paystub for " + data.getPeriod();
+            String body = "Hello " + data.getFullName() + ",\n\nPlease find your paystub for the period "
+                    + data.getPeriod() + " attached.";
+            String attachmentName = "paystub_" + data.getPeriod() + ".pdf";
+
+            emailService.sendEmailWithAttachment(data.getEmail(), subject, body, pdfBytes, attachmentName);
+            logger.info("Email successfully sent to: {}", data.getEmail());
 
         } catch (Exception e) {
             logger.error("Failed to process record for employee: {}", data.getFullName(), e);
