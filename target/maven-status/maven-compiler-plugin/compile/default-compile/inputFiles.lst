@@ -1,8 +1,0 @@
-/home/jp/Documents/payStub-challenge/src/main/java/com/paymentStubs/demo/DemoApplication.java
-/home/jp/Documents/payStub-challenge/src/main/java/com/paymentStubs/demo/config/AsyncConfig.java
-/home/jp/Documents/payStub-challenge/src/main/java/com/paymentStubs/demo/config/MessageSourceConfig.java
-/home/jp/Documents/payStub-challenge/src/main/java/com/paymentStubs/demo/controller/StubPayController.java
-/home/jp/Documents/payStub-challenge/src/main/java/com/paymentStubs/demo/dto/PayrollData.java
-/home/jp/Documents/payStub-challenge/src/main/java/com/paymentStubs/demo/service/EmailService.java
-/home/jp/Documents/payStub-challenge/src/main/java/com/paymentStubs/demo/service/PayrollService.java
-/home/jp/Documents/payStub-challenge/src/main/java/com/paymentStubs/demo/service/PdfService.java
